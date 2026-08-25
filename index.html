@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eaf7ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Ai-mizu">
+  <title>みずナビ | MIZU-NAVI</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <style>
+    :root{
+      --bg:#f5fbff;
+      --panel:rgba(255,255,255,.94);
+      --ink:#15324b;
+      --muted:#71869a;
+      --line:#dcecf6;
+      --blue:#49b5ec;
+      --blue2:#8fd9f7;
+      --soft:#eaf8ff;
+      --shadow:0 12px 32px rgba(62,146,190,.14);
+      --shadow-soft:0 7px 20px rgba(62,146,190,.10);
+      --radius:26px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:linear-gradient(180deg,#edf9ff 0,#fff 34%,#f7fbfd 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif}
+    body{min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+    button,input{font:inherit}
+    button{color:inherit}
+    .app{max-width:560px;margin:0 auto;padding:18px 16px 36px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+    
+    .brand-row{display:flex;align-items:center;gap:5px}
+    .brand-mascot{width:31px;height:31px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(39,150,204,.15))}
+    .brand-lockup{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+    .brand-main{
+      position:relative;
+      font-size:31px;font-weight:900;letter-spacing:.045em;
+      color:#43b7e9;
+      -webkit-text-stroke:1px rgba(255,255,255,.92);
+      text-shadow:
+        0 1px 0 #dff7ff,
+        0 2px 0 #bcecff,
+        0 4px 7px rgba(39,151,204,.20);
+    }
+    .brand-main::after{
+      content:"";
+      position:absolute;left:9px;right:12px;top:4px;height:7px;
+      border-radius:99px;
+      background:linear-gradient(90deg,rgba(255,255,255,.72),rgba(255,255,255,.08));
+      opacity:.7;pointer-events:none;
+    }
+    .brand-sub{
+      margin-top:7px;margin-left:2px;
+      font-size:9px;font-weight:800;letter-spacing:.22em;color:#83aabd;
+    }
+    .date{font-size:13px;color:var(--muted);margin-top:3px}
+    .dw{text-align:right;font-size:12px;color:var(--muted)}
+    .dw strong{display:block;color:var(--ink);font-size:17px;margin-top:2px}
+    .hero{
+      background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(247,252,255,.96));
+      border:1px solid rgba(196,228,244,.95); border-radius:34px;
+      box-shadow:0 15px 35px rgba(49,144,191,.14), inset 0 1px 0 rgba(255,255,255,.95);
+      padding:25px 22px 21px; text-align:center;
+    }
+    .hero-label{font-size:14px;color:var(--muted)}
+    .remaining{
+      font-size:68px;line-height:1;font-weight:850;color:#249fdf;letter-spacing:-.045em;margin:7px 0;
+      text-shadow:0 2px 0 #fff, 0 5px 12px rgba(41,163,221,.18)
+    }
+    .remaining small{font-size:22px;font-weight:700;letter-spacing:0}
+    .mascot{
+      width:82px;height:82px;margin:7px auto 4px;object-fit:contain;display:block;
+      filter:drop-shadow(0 8px 9px rgba(39,150,204,.17))
+    }
+    .bar{
+      height:16px;background:linear-gradient(180deg,#eef2f4,#e4eaee);border-radius:99px;overflow:hidden;margin-top:15px;
+      box-shadow:inset 0 2px 4px rgba(0,0,0,.06),0 1px 0 #fff
+    }
+    .bar .left{
+      height:100%;background:linear-gradient(180deg,#88ddfa 0%,#42b8ed 58%,#2aa4e1 100%);border-radius:99px;
+      box-shadow:inset 0 2px 3px rgba(255,255,255,.55);transition:width .25s ease
+    }
+    .hero-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)}
+    .hero-note{font-size:13px;margin-top:10px}
+    section{margin-top:22px}
+    .section-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:10px}
+    h2{font-size:18px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin-top:3px}
+    .outing{
+      border:1px solid var(--line); background:white; border-radius:999px; padding:7px 11px;
+      display:flex;gap:6px;align-items:center;font-size:12px;
+    }
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+    .drink{
+      border:1px solid rgba(205,231,244,.96);
+      background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);border-radius:23px;padding:9px 5px 10px;
+      box-shadow:0 8px 18px rgba(65,144,184,.10), inset 0 1px 0 rgba(255,255,255,.98);min-height:132px;
+      transition:transform .08s ease, box-shadow .08s ease;
+    }
+    .drink:active{transform:scale(.96);box-shadow:0 2px 7px rgba(79,147,182,.08)}
+    .drink img{
+      width:68px;height:68px;object-fit:contain;display:block;margin:0 auto 3px;
+      filter:drop-shadow(0 5px 5px rgba(71,141,175,.10))
+    }
+    .drink-name{font-size:12px;font-weight:700;line-height:1.2}
+    .drink-ml{font-size:12px;color:#259fdc;margin-top:3px;font-weight:700}
+    .custom{
+      display:none;background:white;border:1px solid var(--line);border-radius:20px;padding:12px;margin-top:10px;box-shadow:var(--shadow)
+    }
+    .custom.show{display:block}
+    .custom-row{display:grid;grid-template-columns:1fr 110px;gap:8px}
+    .custom input{width:100%;border:1px solid var(--line);border-radius:13px;padding:10px;background:#fbfdff}
+    .primary{width:100%;border:0;border-radius:14px;background:#e6f6ff;color:#138fcf;font-weight:800;padding:11px;margin-top:8px}
+    .panel{
+      background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(250,253,255,.96));
+      border:1px solid rgba(207,232,244,.95);border-radius:25px;padding:14px 16px;
+      box-shadow:var(--shadow-soft),inset 0 1px 0 rgba(255,255,255,.98)
+    }
+    .log-row{display:grid;grid-template-columns:1fr auto 34px;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid #edf3f6}
+    .log-row:last-child{border-bottom:0}
+    .log-main{display:flex;align-items:center;gap:9px;font-size:14px}
+    .log-main img{width:32px;height:32px;object-fit:contain}
+    .log-tag{display:inline-block;font-size:10px;color:#6e8090;background:#f1f6f9;border-radius:999px;padding:2px 6px;margin-left:4px}
+    .trash{border:0;background:transparent;font-size:17px;opacity:.55;padding:4px}
+    .undo{display:none;margin-top:10px;background:#263847;color:white;border-radius:16px;padding:11px 13px;font-size:13px;justify-content:space-between;align-items:center}
+    .undo.show{display:flex}
+    .undo button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#bfeaff;border-radius:10px;padding:5px 9px}
+    .chart-wrap{position:relative;height:170px;padding:8px 5px 24px}
+    .limit-line{position:absolute;left:5px;right:5px;border-top:1.5px dashed #65bde8;bottom:86px}
+    .limit-label{position:absolute;right:7px;bottom:90px;font-size:10px;color:#4aaad8;background:white;padding-left:5px}
+    .bars{height:135px;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:end}
+    .daycol{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+    .vbar{
+      width:78%;min-height:4px;border-radius:13px 13px 6px 6px;
+      background:linear-gradient(180deg,#a8e5fa 0%,#6acaf0 55%,#4ab3e5 100%);
+      box-shadow:inset 0 3px 4px rgba(255,255,255,.72),0 5px 9px rgba(65,164,209,.14);
+      transition:height .25s ease;
+    }
+    .day{font-size:10px;color:var(--muted)}
+    .trend{font-size:13px;line-height:1.7;color:#425d70}
+    .date-nav{
+      display:flex;align-items:center;gap:8px;margin-top:5px;
+    }
+    .date-nav button{
+      width:34px;height:30px;border:1px solid var(--line);border-radius:12px;background:white;
+      color:#2b90c3;font-size:18px;line-height:1;box-shadow:0 3px 10px rgba(62,146,190,.08)
+    }
+    .date-nav button:disabled{opacity:.28}
+    .date-nav .today-btn{
+      width:auto;padding:0 10px;font-size:11px;font-weight:700;
+    }
+    .past-badge{
+      display:none;margin-top:4px;font-size:11px;color:#73889a;
+    }
+    .past-badge.show{display:block}
+    details{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
+    summary{font-size:14px;cursor:pointer}
+    .settings{display:grid;gap:10px;margin-top:12px}
+    .settings label{font-size:12px;color:var(--muted)}
+    .settings input{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:13px;padding:10px;background:white}
+    .drink-settings{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+    .drink-settings-title{font-size:14px;font-weight:800;color:var(--ink)}
+    .drink-settings-sub{font-size:11px;color:var(--muted);margin:3px 0 10px}
+    .drink-settings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+    .drink-settings-grid label{font-size:11px;color:var(--muted)}
+    .drink-settings-grid input{margin-top:4px}
+
+    @media(max-width:420px){
+      .app{padding-left:12px;padding-right:12px}
+      .grid{grid-template-columns:repeat(4,1fr);gap:6px}
+      .drink{border-radius:18px;min-height:119px;padding:7px 3px}
+      .drink img{width:56px;height:56px}
+      .drink-name{font-size:11px}
+      .drink-ml{font-size:11px}
+      .remaining{font-size:57px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="brand-lockup">
+        <div class="brand-row"><div class="brand-main">みずナビ</div><img class="brand-mascot" src="./mascot.PNG" alt=""></div>
+        <div class="brand-sub">MIZU-NAVI</div>
+      </div>
+      <div class="date-nav">
+        <button type="button" id="prevDay" aria-label="前の日">‹</button>
+        <div>
+          <div class="date" id="dateLabel"></div>
+          <div class="past-badge" id="pastBadge">過去の記録を編集中</div>
+        </div>
+        <button type="button" id="nextDay" aria-label="次の日">›</button>
+        <button type="button" class="today-btn" id="todayBtn">今日</button>
+      </div>
+    </div>
+    <div class="dw">目標体重 DW<strong><span id="dwTop">54.0</span> kg</strong></div>
+  </header>
+
+  <div class="hero" aria-live="polite">
+    <div class="hero-label">今日あと飲める目安</div>
+    <div class="remaining"><span id="remaining">800</span><small> mL</small></div>
+    <img class="mascot" src="./mascot.PNG" alt="水滴のキャラクター">
+    <div class="bar"><div class="left" id="remainBar" style="width:100%"></div></div>
+    <div class="hero-meta"><span>残り <b id="remainingSmall">800mL</b></span><span>摂取 <b id="usedText">0mL</b></span></div>
+    <div class="hero-note" id="heroNote">1日の水分は800mLまでを目安に</div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div><h2>飲んだものを選ぶ</h2><div class="sub">タップするだけで記録</div></div>
+      <label class="outing"><input id="outing" type="checkbox"> 🚶 外出中</label>
+    </div>
+
+    <div class="grid" id="drinkGrid"></div>
+
+    <div class="custom" id="customBox">
+      <div class="custom-row">
+        <input id="customName" value="その他" aria-label="飲み物の名前">
+        <input id="customAmount" type="number" inputmode="numeric" min="1" step="10" value="100" aria-label="量 mL">
+      </div>
+      <button class="primary" id="customAdd">この内容で記録</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div><h2 id="memoTitle">今日のメモ</h2><div class="sub">入力した分を自動で合計</div></div>
+      <strong id="memoTotal">0mL</strong>
+    </div>
+    <div class="panel" id="log"></div>
+    <div class="undo" id="undo"><span>記録を削除しました</span><button id="undoBtn">元に戻す</button></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div><h2>7日間の記録</h2><div class="sub">毎日の水分量をそのまま見る</div></div>
+    </div>
+    <div class="panel">
+      <div class="chart-wrap">
+        <div class="limit-line" id="limitLine"></div>
+        <div class="limit-label" id="limitLabel">800mLまでの目安</div>
+        <div class="bars" id="bars"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>外出した日の傾向</h2>
+      <div class="sub">飲み方のクセを見つけるヒント</div>
+      <p class="trend" id="trendText">データがたまると、外出した日の水分量を比べられます。</p>
+    </div>
+  </section>
+
+  <details>
+    <summary>⚙️ 設定</summary>
+    <div class="settings">
+      <label>目標体重 DW（kg）
+        <input id="dwInput" type="number" inputmode="decimal" value="54.0" step="0.1">
+      </label>
+      <label>1日の水分目安（mLまで）
+        <input id="limitInput" type="number" inputmode="numeric" value="800" step="50">
+      </label>
+      <div class="drink-settings">
+        <div class="drink-settings-title">いつもの量</div>
+        <div class="drink-settings-sub">普段使うコップやマグに合わせて変更できます</div>
+        <div class="drink-settings-grid">
+          <label>服薬の水<input class="drink-amount-input" data-drink-id="med_water" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>コップの水<input class="drink-amount-input" data-drink-id="cup_water" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>お茶<input class="drink-amount-input" data-drink-id="tea" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>コーヒー<input class="drink-amount-input" data-drink-id="coffee" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>牛乳<input class="drink-amount-input" data-drink-id="milk" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>ペットボトル<input class="drink-amount-input" data-drink-id="bottle" type="number" inputmode="numeric" min="1" step="10"></label>
+          <label>汁物<input class="drink-amount-input" data-drink-id="soup" type="number" inputmode="numeric" min="1" step="10"></label>
+        </div>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+const DRINK_DEFAULTS = [
+  {id:'med_water', name:'服薬の水', amount:60, image:'./assets/med_water.png'},
+  {id:'cup_water', name:'コップの水', amount:200, image:'./assets/cup_water.png'},
+  {id:'tea', name:'お茶', amount:200, image:'./assets/tea.png'},
+  {id:'coffee', name:'コーヒー', amount:150, image:'./assets/coffee.png'},
+  {id:'milk', name:'牛乳', amount:200, image:'./assets/milk.png'},
+  {id:'bottle', name:'ペットボトル', amount:500, image:'./assets/bottle.png'},
+  {id:'soup', name:'汁物', amount:150, image:'./assets/soup.png'},
+  {id:'other', name:'その他', amount:null, image:'./assets/other.png'}
+];
+
+function getDrinks(){
+  return DRINK_DEFAULTS.map(d => {
+    if(d.amount === null) return {...d};
+    const saved = settings.drinkAmounts && settings.drinkAmounts[d.id];
+    return {...d, amount: Number(saved) > 0 ? Number(saved) : d.amount};
+  });
+}
+
+const LS = {
+  settings:'aimizu-settings-v1',
+  entries:'aimizu-entries-v1'
+};
+
+let settings = JSON.parse(localStorage.getItem(LS.settings) || '{"dw":54,"limit":800}');
+if(!settings.drinkAmounts){
+  settings.drinkAmounts = {
+    med_water:60,
+    cup_water:200,
+    tea:200,
+    coffee:150,
+    milk:200,
+    bottle:500,
+    soup:150
+  };
+}
+let allEntries = JSON.parse(localStorage.getItem(LS.entries) || '[]');
+let lastDeleted = null;
+
+const pad = n => String(n).padStart(2,'0');
+const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const realToday = new Date();
+realToday.setHours(12,0,0,0);
+const todayKey = dateKey(realToday);
+let selectedDate = new Date(realToday);
+let selectedDateKey = todayKey;
+
+function save(){
+  localStorage.setItem(LS.settings, JSON.stringify(settings));
+  localStorage.setItem(LS.entries, JSON.stringify(allEntries));
+}
+
+function entriesFor(key){
+  return allEntries.filter(e => e.date === key);
+}
+function selectedEntries(){
+  return entriesFor(selectedDateKey);
+}
+function totalFor(key){
+  return entriesFor(key).reduce((s,e)=>s+Number(e.amount||0),0);
+}
+function totalSelected(){
+  return totalFor(selectedDateKey);
+}
+function dayLabel(d){
+  return ['日','月','火','水','木','金','土'][d.getDay()];
+}
+function formatDate(d){
+  return `${d.getMonth()+1}月${d.getDate()}日（${dayLabel(d)}）`;
+}
+function isTodaySelected(){
+  return selectedDateKey === todayKey;
+}
+function changeSelectedDate(delta){
+  const d = new Date(selectedDate);
+  d.setDate(d.getDate()+delta);
+  d.setHours(12,0,0,0);
+  if(d > realToday) return;
+  selectedDate = d;
+  selectedDateKey = dateKey(d);
+  render();
+}
+function goToday(){
+  selectedDate = new Date(realToday);
+  selectedDateKey = todayKey;
+  render();
+}
+
+function renderGrid(){
+  const grid = document.getElementById('drinkGrid');
+  grid.innerHTML = '';
+  getDrinks().forEach(d=>{
+    const b = document.createElement('button');
+    b.className='drink';
+    b.type='button';
+    b.innerHTML = `<img src="${d.image}" alt=""><div class="drink-name">${d.name}</div><div class="drink-ml">${d.amount ? d.amount+'mL' : '量を入力'}</div>`;
+    b.addEventListener('click',()=>{
+      if(d.amount===null){
+        document.getElementById('customBox').classList.toggle('show');
+      }else{
+        addEntry(d.name,d.amount,d.image);
+      }
+    });
+    grid.appendChild(b);
+  });
+}
+
+function addEntry(name, amount, image){
+  allEntries.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random(),
+    date: selectedDateKey,
+    time: isTodaySelected()
+      ? new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})
+      : '後から入力',
+    name, amount:Number(amount),
+    image:image || './assets/other.png',
+    outing:document.getElementById('outing').checked
+  });
+  save(); render();
+}
+
+function deleteEntry(id){
+  const i = allEntries.findIndex(e=>e.id===id);
+  if(i<0)return;
+  lastDeleted={index:i,item:allEntries[i]};
+  allEntries.splice(i,1);
+  save();
+  document.getElementById('undo').classList.add('show');
+  render();
+}
+
+function renderLog(){
+  const log=document.getElementById('log');
+  const list=selectedEntries();
+  if(!list.length){
+    log.innerHTML='<div class="sub" style="padding:8px 0">この日の記録はまだありません。</div>';
+    return;
+  }
+  log.innerHTML='';
+  list.forEach(e=>{
+    const row=document.createElement('div');
+    row.className='log-row';
+    row.innerHTML=`<div class="log-main"><img src="${e.image}" alt=""><span>${e.name}${e.outing?'<span class="log-tag">外出中</span>':''}<br><small class="sub">${e.time}</small></span></div><strong>${e.amount}mL</strong><button class="trash" aria-label="${e.name}を削除">🗑️</button>`;
+    row.querySelector('.trash').addEventListener('click',()=>deleteEntry(e.id));
+    log.appendChild(row);
+  });
+}
+
+function past7(){
+  const arr=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();
+    d.setHours(12,0,0,0);
+    d.setDate(d.getDate()-i);
+    arr.push({date:d,key:dateKey(d),value:totalFor(dateKey(d))});
+  }
+  return arr;
+}
+
+function renderBars(){
+  const data=past7();
+  const max=Math.max(settings.limit*1.35, ...data.map(d=>d.value), 1);
+  const chart=document.getElementById('bars');
+  chart.innerHTML='';
+  data.forEach(d=>{
+    const col=document.createElement('div');
+    col.className='daycol';
+    const h=Math.max(3,d.value/max*125);
+    col.innerHTML=`<div class="vbar" style="height:${h}px" title="${d.value}mL"></div><div class="day">${d.date.getMonth()+1}/${d.date.getDate()}<br>${dayLabel(d.date)}</div>`;
+    chart.appendChild(col);
+  });
+  const lineBottom=24 + (settings.limit/max*125);
+  document.getElementById('limitLine').style.bottom=lineBottom+'px';
+  document.getElementById('limitLabel').style.bottom=(lineBottom+4)+'px';
+  document.getElementById('limitLabel').textContent=settings.limit+'mLまでの目安';
+}
+
+function renderTrend(){
+  const data=past7();
+  const recentKeys=new Set(data.map(d=>d.key));
+  const recent=allEntries.filter(e=>recentKeys.has(e.date));
+  const outDays={}; const homeDays={};
+  data.forEach(d=>{outDays[d.key]=[];homeDays[d.key]=[]});
+  recent.forEach(e=>{
+    (e.outing?outDays[e.date]:homeDays[e.date]).push(e);
+  });
+  const dayTotals = (bucket)=>Object.entries(bucket)
+      .filter(([,v])=>v.length)
+      .map(([k,v])=>v.reduce((s,e)=>s+e.amount,0));
+  const out=dayTotals(outDays), home=dayTotals(homeDays);
+  const text=document.getElementById('trendText');
+  if(out.length>=2 && home.length>=2){
+    const a=Math.round(out.reduce((s,v)=>s+v,0)/out.length);
+    const b=Math.round(home.reduce((s,v)=>s+v,0)/home.length);
+    text.textContent=`過去7日では、外出中の記録がある日の平均は約${a}mL、その他の日は約${b}mLです。`;
+  } else {
+    text.textContent='データがたまると、外出した日の水分量を比べられます。';
+  }
+}
+
+function render(){
+  const used=totalSelected();
+  const remaining=Math.max(0,settings.limit-used);
+  const pct=Math.max(0,Math.min(100, remaining/settings.limit*100));
+  document.getElementById('dateLabel').textContent=formatDate(selectedDate);
+  document.getElementById('pastBadge').classList.toggle('show', !isTodaySelected());
+  document.getElementById('nextDay').disabled = isTodaySelected();
+  document.getElementById('todayBtn').style.visibility = isTodaySelected() ? 'hidden' : 'visible';
+  document.querySelector('.hero-label').textContent =
+    isTodaySelected() ? '今日あと飲める目安' : 'この日の残り目安';
+  document.getElementById('remaining').textContent=remaining;
+  document.getElementById('remainingSmall').textContent=remaining+'mL';
+  document.getElementById('usedText').textContent=used+'mL';
+  document.getElementById('memoTotal').textContent=used+'mL';
+  document.getElementById('memoTitle').textContent = isTodaySelected() ? '今日のメモ' : 'この日のメモ';
+  document.getElementById('remainBar').style.width=pct+'%';
+  document.getElementById('heroNote').textContent =
+    used<=settings.limit
+      ? `1日の水分は${settings.limit}mLまでを目安に`
+      : (isTodaySelected() ? '今日はここから少し気をつけよう 💧' : `この日は目安より${used-settings.limit}mL多い記録です`);
+  document.getElementById('dwTop').textContent=Number(settings.dw).toFixed(1);
+  document.getElementById('dwInput').value=settings.dw;
+  document.getElementById('limitInput').value=settings.limit;
+  document.querySelectorAll('.drink-amount-input').forEach(input=>{
+    const id = input.dataset.drinkId;
+    input.value = settings.drinkAmounts[id];
+  });
+  renderLog(); renderBars(); renderTrend();
+}
+
+document.getElementById('customAdd').addEventListener('click',()=>{
+  const name=document.getElementById('customName').value.trim()||'その他';
+  const amount=Number(document.getElementById('customAmount').value);
+  if(amount>0){
+    addEntry(name,amount,'./assets/other.png');
+    document.getElementById('customBox').classList.remove('show');
+  }
+});
+document.getElementById('undoBtn').addEventListener('click',()=>{
+  if(lastDeleted){
+    allEntries.splice(lastDeleted.index,0,lastDeleted.item);
+    lastDeleted=null; save();
+    document.getElementById('undo').classList.remove('show');
+    render();
+  }
+});
+document.getElementById('dwInput').addEventListener('change',e=>{
+  settings.dw=Number(e.target.value)||54; save(); render();
+});
+document.getElementById('limitInput').addEventListener('change',e=>{
+  settings.limit=Math.max(1,Number(e.target.value)||800); save(); render();
+});
+
+document.getElementById('prevDay').addEventListener('click',()=>changeSelectedDate(-1));
+document.getElementById('nextDay').addEventListener('click',()=>changeSelectedDate(1));
+document.getElementById('todayBtn').addEventListener('click',goToday);
+
+document.querySelectorAll('.drink-amount-input').forEach(input=>{
+  input.addEventListener('change', e=>{
+    const id = e.target.dataset.drinkId;
+    const value = Math.max(1, Number(e.target.value) || 1);
+    settings.drinkAmounts[id] = value;
+    save();
+    renderGrid();
+    render();
+  });
+});
+
+renderGrid(); render();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+}
+</script>
+</body>
+</html>
