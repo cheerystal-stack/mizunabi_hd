@@ -1,6 +1,6 @@
 {
-  "name": "みずナビ",
-  "short_name": "mizu-navi",
+  "name": "MIZU-NAVI LAB",
+  "short_name": "MIZU-NAVI LAB",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f5fbff",
