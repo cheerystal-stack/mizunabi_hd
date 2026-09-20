@@ -182,6 +182,13 @@
     .weight-result strong{color:#178fc8;font-size:14px}
     .weight-help{font-size:11px;color:var(--muted);line-height:1.55}
     .schedule-settings{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+    .data-settings{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+    .data-settings-title{font-size:14px;font-weight:800;color:var(--ink)}
+    .data-settings-sub{font-size:11px;color:var(--muted);margin:3px 0 9px;line-height:1.55}
+    .data-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .data-btn{border:1px solid var(--line);background:white;border-radius:13px;padding:10px 8px;font-size:12px;font-weight:800;color:#367c9e}
+    .data-btn:active{transform:scale(.98)}
+    .export-note{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
     .schedule-settings-title{font-size:14px;font-weight:800;color:var(--ink)}
     .schedule-settings-sub{font-size:11px;color:var(--muted);margin:3px 0 8px}
     .schedule-select{width:100%;border:1px solid var(--line);border-radius:13px;padding:10px;background:white;color:var(--ink)}
@@ -401,6 +408,15 @@
           <label>汁物<input class="drink-amount-input" data-drink-id="soup" type="number" inputmode="numeric" min="1" step="10"></label>
         </div>
       </div>
+      <div class="data-settings">
+        <div class="data-settings-title">データ管理</div>
+        <div class="data-settings-sub">記録を端末の外に保存できます。CSVは表計算ソフトで確認できます。</div>
+        <div class="data-buttons">
+          <button type="button" class="data-btn" id="exportCsvBtn">CSVを書き出す</button>
+          <button type="button" class="data-btn" id="exportBackupBtn">バックアップ</button>
+        </div>
+        <div class="export-note">氏名などの個人情報は含みません。バックアップには、設定・水分記録・体重記録が含まれます。</div>
+      </div>
     </div>
   </details>
 </div>
@@ -456,6 +472,68 @@ const todayKey = dateKey(realToday);
 let selectedDate = new Date(realToday);
 let selectedDateKey = todayKey;
 let calendarMonth = new Date(realToday.getFullYear(), realToday.getMonth(), 1, 12, 0, 0, 0);
+
+function csvCell(value){
+  const s=String(value ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+function downloadBlob(filename, content, type){
+  const blob=new Blob([content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function allRecordedDates(){
+  return [...new Set([
+    ...allEntries.map(e=>e.date),
+    ...weightEntries.map(w=>w.date)
+  ].filter(Boolean))].sort();
+}
+function exportCsv(){
+  const header=['日付','水分摂取量(mL)','外出','透析日','透析前体重(kg)','透析後体重(kg)','自宅体重(kg)','体重増加量(kg)','体重増加率(%)','間隔'];
+  const rows=[header];
+  allRecordedDates().forEach(key=>{
+    const d=parseKey(key);
+    const es=entriesFor(key);
+    const total=totalFor(key);
+    const outing=es.some(e=>e.outing===true || e.outing==='true') ? '○' : '';
+    const dialysis=isDialysisDate(d);
+    const w=weightFor(key) || {};
+    let gainKg='', gainPct='', interval='';
+    if(dialysis && w.pre){
+      const prevDate=previousDialysisDate(d);
+      const prev=prevDate ? weightFor(dateKey(prevDate)) : null;
+      if(prev && prev.post){
+        const pre=Number(w.pre), post=Number(prev.post);
+        gainKg=(pre-post).toFixed(1);
+        gainPct=((pre-post)/post*100).toFixed(1);
+        interval=intervalLabel(d);
+      }
+    }
+    rows.push([
+      key,total,outing,dialysis?'○':'',
+      w.pre?Number(w.pre).toFixed(1):'',
+      w.post?Number(w.post).toFixed(1):'',
+      w.home?Number(w.home).toFixed(1):'',
+      gainKg,gainPct,interval
+    ]);
+  });
+  const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  downloadBlob(`MIZU-NAVI_${todayKey}.csv`,csv,'text/csv;charset=utf-8');
+}
+function exportBackup(){
+  const payload={
+    app:'MIZU-NAVI',
+    schemaVersion:1,
+    exportedAt:new Date().toISOString(),
+    settings,
+    entries:allEntries,
+    weights:weightEntries
+  };
+  downloadBlob(`MIZU-NAVI_backup_${todayKey}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
 
 function save(){
   localStorage.setItem(LS.settings, JSON.stringify(settings));
@@ -830,7 +908,10 @@ document.querySelectorAll('.drink-amount-input').forEach(input=>{
   });
 });
 
-renderGrid(); render();
+renderGrid(); document.getElementById('exportCsvBtn').addEventListener('click',exportCsv);
+document.getElementById('exportBackupBtn').addEventListener('click',exportBackup);
+
+render();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
