@@ -188,6 +188,7 @@
     .data-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .data-btn{border:1px solid var(--line);background:white;border-radius:13px;padding:10px 8px;font-size:12px;font-weight:800;color:#367c9e}
     .data-btn:active{transform:scale(.98)}
+    #importBackupBtn{grid-column:1/-1}
     .export-note{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
     .schedule-settings-title{font-size:14px;font-weight:800;color:var(--ink)}
     .schedule-settings-sub{font-size:11px;color:var(--muted);margin:3px 0 8px}
@@ -414,8 +415,10 @@
         <div class="data-buttons">
           <button type="button" class="data-btn" id="exportCsvBtn">CSVを書き出す</button>
           <button type="button" class="data-btn" id="exportBackupBtn">バックアップ</button>
+          <button type="button" class="data-btn" id="importBackupBtn">バックアップを読み込む</button>
         </div>
-        <div class="export-note">氏名などの個人情報は含みません。バックアップには、設定・水分記録・体重記録が含まれます。</div>
+        <input id="importBackupFile" type="file" accept=".json,application/json" hidden>
+        <div class="export-note">氏名などの個人情報は含みません。バックアップには、設定・水分記録・体重記録が含まれます。読み込み時は現在の記録を置き換える前に確認します。</div>
       </div>
     </div>
   </details>
@@ -533,6 +536,50 @@ function exportBackup(){
     weights:weightEntries
   };
   downloadBlob(`MIZU-NAVI_backup_${todayKey}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
+
+function validBackup(data){
+  return data &&
+    data.app==='MIZU-NAVI' &&
+    Number(data.schemaVersion)===1 &&
+    data.settings && typeof data.settings==='object' &&
+    Array.isArray(data.entries) &&
+    Array.isArray(data.weights);
+}
+function importBackupFile(file){
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!validBackup(data)){
+        alert('MIZU-NAVIのバックアップファイルとして確認できませんでした。');
+        return;
+      }
+      const ok=confirm(
+        `バックアップを読み込みます。\n\n水分記録：${data.entries.length}件\n体重記録：${data.weights.length}日分\n\n現在この端末にある記録は、バックアップの内容に置き換わります。よろしいですか？`
+      );
+      if(!ok) return;
+      settings=data.settings;
+      allEntries=data.entries;
+      weightEntries=data.weights;
+      if(!settings.drinkAmounts) settings.drinkAmounts={};
+      if(!('dialysisSchedule' in settings)) settings.dialysisSchedule='';
+      save();
+      selectedDate=new Date(realToday);
+      selectedDateKey=todayKey;
+      calendarMonth=new Date(realToday.getFullYear(),realToday.getMonth(),1,12,0,0,0);
+      render();
+      alert('バックアップを読み込みました。');
+    }catch(e){
+      alert('バックアップを読み込めませんでした。ファイルを確認してください。');
+    }finally{
+      const input=document.getElementById('importBackupFile');
+      if(input) input.value='';
+    }
+  };
+  reader.onerror=()=>alert('ファイルを読み込めませんでした。');
+  reader.readAsText(file);
 }
 
 function save(){
@@ -910,6 +957,12 @@ document.querySelectorAll('.drink-amount-input').forEach(input=>{
 
 renderGrid(); document.getElementById('exportCsvBtn').addEventListener('click',exportCsv);
 document.getElementById('exportBackupBtn').addEventListener('click',exportBackup);
+document.getElementById('importBackupBtn').addEventListener('click',()=>{
+  document.getElementById('importBackupFile').click();
+});
+document.getElementById('importBackupFile').addEventListener('change',e=>{
+  importBackupFile(e.target.files && e.target.files[0]);
+});
 
 render();
 
