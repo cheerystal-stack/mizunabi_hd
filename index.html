@@ -212,6 +212,17 @@
     .month-none{font-size:10px;color:#c1cbd1}
     .month-note{margin-top:10px;font-size:10px;color:var(--muted);line-height:1.5}
 
+
+    .weight-saved{min-height:18px;font-size:11px;color:#2b9ecb;font-weight:750;opacity:0;transition:opacity .2s}
+    .weight-saved.show{opacity:1}
+    .weight-history{border-top:1px solid var(--line);padding-top:11px}
+    .weight-history-title{font-size:12px;font-weight:850;color:var(--ink);margin-bottom:7px}
+    .weight-history-list{display:grid;gap:6px}
+    .weight-history-row{display:grid;grid-template-columns:50px 1fr;gap:8px;font-size:11px;line-height:1.55}
+    .weight-history-date{color:var(--muted);font-weight:750}
+    .weight-history-values{color:#456174}.weight-history-values b{color:var(--ink)}
+    .calendar-pre{font-size:9px;color:#627e8d;white-space:nowrap;margin-top:2px}
+    .calendar-pre.editable{color:#299fce;font-weight:750}
     @media(max-width:420px){
       .app{padding-left:12px;padding-right:12px}
       .grid{grid-template-columns:repeat(4,1fr);gap:6px}
@@ -306,7 +317,12 @@
           <input id="homeWeightInput" type="number" inputmode="decimal" step="0.1" placeholder="測ったときだけ">
         </label>
       </div>
+      <div class="weight-saved" id="weightSaved">✓ 記録しました</div>
       <div class="weight-result" id="weightResult"></div>
+      <div class="weight-history">
+        <div class="weight-history-title">最近の体重記録</div>
+        <div class="weight-history-list" id="weightHistoryList"></div>
+      </div>
       <div class="weight-help">未入力の日があっても大丈夫。体重は、水分のとり方を振り返るための参考として使えます。</div>
     </div>
   </section>
@@ -341,7 +357,7 @@
         <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
       </div>
       <div class="month-grid" id="monthGrid"></div>
-      <div class="month-note">記録がない日は空欄のまま表示します。日付をタップすると、その日の記録を確認できます。</div>
+      <div class="month-note">記録がない日は空欄のまま表示します。今日以前の日付をタップすると、その日の水分・体重を確認、入力できます。</div>
     </div>
   </section>
 
@@ -608,16 +624,17 @@ function renderMonthCalendar(){
     const cell=document.createElement(isFuture?'div':'button');
     if(!isFuture) cell.type='button';
     cell.className='month-day'+(isFuture?' future':'')+(key===selectedDateKey?' selected':'');
-    cell.innerHTML=`<div class="month-date">${day}</div>${
-      hasRecord ? `<div class="month-amount">${amount.toLocaleString()}mL</div>` :
-      `<div class="month-none">${isFuture?'':'—'}</div>`
-    }`;
+    const dialysis=isDialysisDate(d);
+    const weight=weightFor(key);
+    const pre=weight&&weight.pre?Number(weight.pre).toFixed(1):null;
+    const waterLine=hasRecord?`<div class="month-amount">${amount.toLocaleString()}mL</div>`:`<div class="month-none">${isFuture?'':'—'}</div>`;
+    const preLine=dialysis?`<div class="calendar-pre ${(!pre&&!isFuture)?'editable':''}">${pre?`前 ${pre}kg`:(isFuture?'透析日':'体重入力 ›')}</div>`:'';
+    cell.innerHTML=`<div class="month-date">${day}</div><div>${waterLine}${preLine}</div>`;
     if(!isFuture){
       cell.addEventListener('click',()=>{
-        selectedDate=new Date(d);
-        selectedDateKey=key;
-        render();
-        window.scrollTo({top:0,behavior:'smooth'});
+        selectedDate=new Date(d); selectedDateKey=key; render();
+        const target=document.getElementById('weightDayLabel');
+        if(target) setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'center'}),80);
       });
     }
     grid.appendChild(cell);
@@ -648,6 +665,12 @@ function renderTrend(){
 }
 
 
+let weightSavedTimer=null;
+function showWeightSaved(){
+  const el=document.getElementById('weightSaved'); if(!el)return;
+  el.classList.add('show'); clearTimeout(weightSavedTimer);
+  weightSavedTimer=setTimeout(()=>el.classList.remove('show'),1600);
+}
 function scheduleInfo(){
   const s=settings.dialysisSchedule||'';
   if(s==='MWF_AM') return {days:[1,3,5], shift:'AM'};
@@ -662,7 +685,7 @@ function upsertWeight(key, field, value){
   if(!w){ w={date:key,pre:null,post:null,home:null}; weightEntries.push(w); }
   w[field] = value>0 ? Number(value) : null;
   if(!w.pre && !w.post && !w.home) weightEntries = weightEntries.filter(x=>x.date!==key);
-  save(); renderWeight();
+  save(); renderWeight(); renderMonthCalendar(); showWeightSaved();
 }
 function previousDialysisDate(d){
   if(!settings.dialysisSchedule) return null;
@@ -684,11 +707,25 @@ function renderDialysisBanner(){
   document.getElementById('dialysisBannerText').textContent=isTodaySelected()?'今日は透析日です':'この日は透析日です';
   document.getElementById('dialysisShiftText').textContent=scheduleInfo().shift;
 }
+function renderWeightHistory(){
+  const list=document.getElementById('weightHistoryList'); if(!list)return;
+  const rows=weightEntries.filter(w=>w.pre||w.post||w.home).slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  if(!rows.length){list.innerHTML='<div class="sub">記録すると、ここに最近の体重が表示されます。</div>';return;}
+  list.innerHTML=rows.map(w=>{
+    const d=parseKey(w.date), vals=[];
+    if(w.pre) vals.push(`透析前 <b>${Number(w.pre).toFixed(1)}kg</b>`);
+    if(w.post) vals.push(`透析後 <b>${Number(w.post).toFixed(1)}kg</b>`);
+    if(w.home) vals.push(`自宅 <b>${Number(w.home).toFixed(1)}kg</b>`);
+    return `<div class="weight-history-row"><div class="weight-history-date">${d.getMonth()+1}/${d.getDate()}</div><div class="weight-history-values">${vals.join('<br>')}</div></div>`;
+  }).join('');
+}
 function renderWeight(){
   const dialysis=isDialysisDate(selectedDate);
   const w=weightFor(selectedDateKey)||{};
   document.getElementById('weightDayLabel').textContent=isTodaySelected()?'今日の体重':`${formatDate(selectedDate)}の体重`;
-  document.getElementById('weightModeText').textContent=dialysis?'透析前・透析後の測定値を記録できます':'自宅で測ったときだけ記録できます';
+  document.getElementById('weightModeText').textContent=dialysis
+    ? (isTodaySelected()?'透析前・透析後の測定値を記録できます':'この日の透析前・透析後体重を入力・修正できます')
+    : (isTodaySelected()?'自宅で測ったときだけ記録できます':'この日の自宅体重を入力・修正できます');
   document.getElementById('dialysisWeightFields').style.display=dialysis?'grid':'none';
   document.getElementById('homeWeightFields').style.display=dialysis?'none':'grid';
   document.getElementById('preWeightInput').value=w.pre??'';

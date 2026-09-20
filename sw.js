@@ -1,4 +1,4 @@
-const CACHE='mizunavi-lab-month-v02';
+const CACHE='mizunavi-lab-weight-v04';
 const ASSETS=[
   './','./index.html','./manifest.json',
   './assets/icon-192.png','./assets/icon-512.png','./mascot.PNG',
